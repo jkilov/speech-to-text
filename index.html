@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Speech Detection</title>
+  <link rel="icon" href="https://fav.farm/🔥" />
+</head>
+<body>
+
+  <div id="header-text">
+    <h2 id="heading">Speech To Task</h2>
+    <h4>Speech Recognition Task Manager</h4>
+
+  </div>
+    <div id="controls">
+      <button id="record">
+        <svg width="20px" height="20px" viewBox="-5 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:sketch="http://www.bohemiancoding.com/sketch/ns">
+    
+          <title>microphone</title>
+          <desc>.</desc>
+          <defs>
+      
+      </defs>
+          <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" sketch:type="MSPage">
+              <g id="Icon-Set" sketch:type="MSLayerGroup" transform="translate(-105.000000, -307.000000)" fill="#E4C784">
+                  <path d="M111,314 C111,311.238 113.239,309 116,309 C118.761,309 121,311.238 121,314 L121,324 C121,326.762 118.761,329 116,329 C113.239,329 111,326.762 111,324 L111,314 L111,314 Z M116,331 C119.866,331 123,327.866 123,324 L123,314 C123,310.134 119.866,307 116,307 C112.134,307 109,310.134 109,314 L109,324 C109,327.866 112.134,331 116,331 L116,331 Z M127,326 L125,326 C124.089,330.007 120.282,333 116,333 C111.718,333 107.911,330.007 107,326 L105,326 C105.883,330.799 110.063,334.51 115,334.955 L115,337 L114,337 C113.448,337 113,337.448 113,338 C113,338.553 113.448,339 114,339 L118,339 C118.552,339 119,338.553 119,338 C119,337.448 118.552,337 118,337 L117,337 L117,334.955 C121.937,334.51 126.117,330.799 127,326 L127,326 Z" id="microphone" sketch:type="MSShapeGroup">
+      
+      </path>
+              </g>
+          </g>
+      </svg>
+      </button>
+      <button id="delete-all" class="hidden">Clear</button>
+    </div>
+    <div id="sort-container">
+      <button id="sort" >Oldest → Newest</button>
+    </div>
+  <div class="words">
+
+  </div>
+ 
+
+<script>
+
+  const recordBtn = document.getElementById("record")
+  const speechDiv = document.querySelector('.words')
+  const deleteBtn = document.getElementById('delete-all')
+  const sortBtn = document.getElementById('sort');
+  let isOld = true
+
+
+
+
+  // global array is used to store new speech transcription and also allow local storage to save and retrieve from somewhere
+  const storedSpeech = JSON.parse(localStorage.getItem('data')) || []
+
+// Access the SpeechRecognition tool across new and older browsers
+window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+
+
+// create a new instance from the Speech Recognition class to get access to properties and methods
+const recognition = new SpeechRecognition();
+
+// Allow for your speech recognition to process results as they are spoken rather than waiting for it to be completed to produce
+recognition.interimResults = true
+
+//Set your language that your speech recognition will process and listen for to United States Englsh
+recognition.lang = 'en-US'
+
+// function that is responsible for handling the printing of the text To Speech
+function printToScreen(arr) {
+// the Div that will stores all the elements HTML will equal your storedSpeech array after you map over it to retrieve each item andand its index
+speechDiv.innerHTML = arr.map((el, index) => {
+  // we need to use the return keyword as the map method returns an new array, but also ew want to return values to update our UI with
+ return `
+ <div class="speech-header">
+  <h5>${el.date}</h5>
+  <button class="delete-btn" id="${index}-btn">Delete</button>
+  </div>
+  <p class='speech-p'>${el.speech}</p>
+  
+  `
+  // since the map method returns a new array, we use the join method to turn this into one string, which is more appropriate for innerHTML and injecting your data into your UI
+}).join("");
+
+
+// after we have dynamically populated the button in our innerHTML we get a collection of all the buttons needed - this returns a nodelist
+const deleteBtns = document.querySelectorAll('.delete-btn')
+// we loop through the nodelist of all of our delete buttons
+deleteBtns.forEach((btn, index) => {
+  // we add an event listener to each button that listens out for the click
+  btn.addEventListener('click', () => {
+    // we get the index of the button that was clicked (which will be the same as the element index) and we use the splice method to remove this from the storedSpeech array
+    storedSpeech.splice(index, 1);
+    // we then update the localStorage with the updates and changes that we have made
+    localStorage.setItem('data', JSON.stringify(storedSpeech))
+
+
+    // We then re-run this function (this is known as recursion) to update the UI if something has been deleted)
+    printToScreen(storedSpeech);
+  })
+makeEditable(speechDiv)
+
+})
+
+// we use an if statement to control the visibility of the delete all button
+
+if (storedSpeech.length > 1) {
+
+  // if there is more than 1 element we show the delete all button
+      deleteBtn.classList.remove('hidden')
+    } else {
+
+      // otherwise we hide it
+      deleteBtn.classList.add('hidden')
+    }
+
+
+}
+
+// create a function to make the last speechtotext editable
+function makeEditable(arr) {
+  // create a list of all your printed speech-To-Texts
+ const pTags = arr.querySelectorAll('p')
+//  once you have your list, you need to get the last one, as this is the only one that should be editable
+ const lastP = pTags[pTags.length-1]
+//  set the attribute of contentEditable, making it possible for a user to edit this within the browser
+ lastP.contentEditable = true;
+
+// add an event listener that triggers everytime the input value changes
+lastP.addEventListener('input', ()=>{
+  // get the last element of the array and get the associated speech property. Update to hold the value of the new text in the p tag
+  storedSpeech[storedSpeech.length-1].speech = lastP.textContent
+  // save/update local storage with the new array/elemet/p tag
+  localStorage.setItem('data', JSON.stringify(storedSpeech))
+})
+}
+
+
+
+recognition.addEventListener('result', (e) => {
+
+  // Turn our Speech Recognition list into an array so we can use the map method on it
+  const speech = Array.from(e.results)
+  //Map over the array and return the first element
+  .map(result => result[0])
+  // within the first Element map over it to return what has been transcribed
+  .map(result => result.transcript)
+  // join the elements of the array into a string
+  .join("");
+
+  //create a new date that auto-updates to keep track of when the speech to text was completed
+  const date = new Date().toDateString();
+
+//only if the speech is the most likely to be used element and is the final version of it do we:
+if(e.results[0].isFinal) {
+
+  //store the Speech to text and date in an object
+  const speechObj = {
+    date: date,
+    speech: speech
+  }
+  //push the object into our array as an element
+  storedSpeech.push(speechObj)
+
+  // store the array in our local storage. Because it is an array, we need to JSON stringify it as local storage can only store strings
+localStorage.setItem('data', JSON.stringify(storedSpeech))
+  
+} 
+printToScreen(storedSpeech);
+
+})
+
+// function to delete all entries
+function deleteAll(arr) {
+
+  // reset the array without recreating its instance (which would have an effect on other places that use the array as a reference)
+  arr.length = 0;
+  // update local storage
+  localStorage.setItem('data', JSON.stringify(arr))
+
+  // reprint the UI
+  printToScreen(arr);
+
+}
+
+// dedicated function used to insert pen icon for editing 
+
+function printPen () {
+
+  // get all the printed speech-to-text
+
+  const pTags = speechDiv.querySelectorAll('.speech-p')
+
+  // locate the last inputted/most recent p tag
+
+const testP = pTags[pTags.length-1]
+
+
+// give it the styling needed
+testP.classList.add('final-p')
+
+// create the span element that will hold the p
+const pencil = document.createElement('span');
+
+// add the pencil string
+pencil.innerText = '✎'
+
+// add styling class to the span
+pencil.classList.add('pencil-pos')
+
+// get hold of the printed span
+const pencilSpan = document.querySelector('.pencil-pos')
+
+// if a span already exists we want to return it in order not to print multiple pencil icons on the same speech to text
+ if (pencilSpan) { 
+  return
+
+ } 
+
+//  otherwise place the icon
+ testP.insertAdjacentElement('beforebegin', pencil)
+
+
+// testP.insertAdjacentElement('beforebegin', pencil)
+console.log(testP)
+
+}
+
+
+window.addEventListener('load', ()=>{
+  printToScreen(storedSpeech)
+printPen()
+
+})
+
+//Start your speech recognition that asks the user for permission to access their microphone and use the speech recognition tool.
+recordBtn.addEventListener('click', () => {
+  recordBtn.classList.add('line')
+  recognition.start();
+})
+
+recognition.addEventListener('end', ()=>{
+  recordBtn.classList.remove('line')
+  printPen()
+
+})
+
+deleteBtn.addEventListener('click', ()=>{
+  deleteAll(storedSpeech)
+})
+
+sortBtn.addEventListener('click', () => {
+  isOld = !isOld
+  if (isOld) {
+    sortBtn.innerText = "Oldest → Newest";
+    storedSpeech.reverse()
+    printToScreen(storedSpeech)
+
+  } else {
+    sortBtn.innerText = "Newest → Oldest"
+    storedSpeech.reverse()
+    printToScreen(storedSpeech)
+  }
+})
+
+</script>
+
+
+  <style>
+    html {
+      font-size: 10px;
+    }
+
+    body {
+      background: #E3E0CD;
+      font-family: 'helvetica neue';
+      font-weight: 200;
+      font-size: 20px;
+    }
+
+    #heading {
+      text-align: center;
+      margin-top: 20px;;
+    }
+
+    #sort-container {
+  display: flex;
+  justify-content: center;
+    }
+
+    #sort-container button {
+      background-color: transparent;
+      border: 1px solid black;
+      padding: 10px;
+      font-weight: 600;
+      border-radius: 5px;
+    }
+
+    #header-text {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #header-text h4 {
+      font-weight: 200;
+      margin-top: 0;
+    }
+
+    .speech-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      margin-bottom: 10px;
+      border-bottom: 1px solid #144E48;
+    }
+
+    .speech-header h5{
+      margin-bottom: 0px;
+    }
+
+
+    .speech-header button {
+      background-color: transparent;
+      color: red;
+      border: none;
+    }
+
+    .pencil-pos {
+  display: inline;
+  margin-right: 20px; 
+  vertical-align: middle;
+}
+
+.final-p{
+  display: inline;
+}
+
+    #speech-body {
+      display: flex;
+    }
+
+    #controls {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #controls button {
+      background-color: #144E48;
+      color: #E4C784;
+      border-radius: 100%;
+      width: 50px;
+      height: 50px;
+      border: 0px solid;
+      margin: 20px 10px;
+    }
+
+
+    #controls button:hover {
+      background-color: #E4C784;
+      color: #144E48;
+      border-radius: 100%;
+      width: 50px;
+      height: 50px;
+      border: 0px solid;
+      margin: 20px 10px;
+    }
+
+    #controls button:hover svg path {
+      fill: #144E48;
+    }
+
+
+  
+
+    .words {
+      max-width: 500px;
+      margin: 50px auto;
+      background: white;
+      border-radius: 5px;
+      box-shadow: 10px 10px 0 rgba(0,0,0,0.1);
+      padding: 1rem 2rem 1rem 5rem;
+      background: -webkit-gradient(linear, 0 0, 0 100%, from(#d9eaf3), color-stop(4%, #fff)) 0 4px;
+      background-size: 100% 3rem;
+      position: relative;
+      line-height: 3rem;
+      min-width: 50%;
+      margin-top: 20px;
+    }
+
+    p {
+      margin: 0 0 3rem;
+    }
+
+    .words:before {
+      content: '';
+      position: absolute;
+      width: 4px;
+      top: 0;
+      left: 30px;
+      bottom: 0;
+      border: 1px solid;
+      border-color: transparent #efe4e4;
+    }
+
+
+ 
+
+    .line {
+  animation: pulse 0.5s linear infinite alternate;
+}
+
+.hidden {
+  display: none;
+}
+
+
+
+@keyframes pulse {
+  from { transform: none; }
+  to { transform: scale(1.2,1.2);}
+
+}
+
+  </style>
+
+</body>
+</html>

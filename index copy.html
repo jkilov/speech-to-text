@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Speech Detection</title>
+  <link rel="icon" href="https://fav.farm/🔥" />
+</head>
+<body>
+
+
+    <div id="controls">
+      <button id="record">
+        <svg width="30px" height="30px" viewBox="-5 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:sketch="http://www.bohemiancoding.com/sketch/ns">
+    
+          <title>microphone</title>
+          <desc>.</desc>
+          <defs>
+      
+      </defs>
+          <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" sketch:type="MSPage">
+              <g id="Icon-Set" sketch:type="MSLayerGroup" transform="translate(-105.000000, -307.000000)" fill="#E4C784">
+                  <path d="M111,314 C111,311.238 113.239,309 116,309 C118.761,309 121,311.238 121,314 L121,324 C121,326.762 118.761,329 116,329 C113.239,329 111,326.762 111,324 L111,314 L111,314 Z M116,331 C119.866,331 123,327.866 123,324 L123,314 C123,310.134 119.866,307 116,307 C112.134,307 109,310.134 109,314 L109,324 C109,327.866 112.134,331 116,331 L116,331 Z M127,326 L125,326 C124.089,330.007 120.282,333 116,333 C111.718,333 107.911,330.007 107,326 L105,326 C105.883,330.799 110.063,334.51 115,334.955 L115,337 L114,337 C113.448,337 113,337.448 113,338 C113,338.553 113.448,339 114,339 L118,339 C118.552,339 119,338.553 119,338 C119,337.448 118.552,337 118,337 L117,337 L117,334.955 C121.937,334.51 126.117,330.799 127,326 L127,326 Z" id="microphone" sketch:type="MSShapeGroup">
+      
+      </path>
+              </g>
+          </g>
+      </svg>
+      </button>
+      <button id="delete-all">Delete All</button>
+    </div>
+  <div class="words">
+  </div>
+ 
+
+<script>
+window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+const wordsDiv = document.querySelector('.words')
+const recordBtn = document.getElementById('record')
+const deleteAllBtn = document.getElementById("delete-all")
+
+
+
+
+let speechCollection = JSON.parse(localStorage.getItem('storedData')) || []
+
+if (speechCollection.length === 0) {
+  deleteAllBtn.classList.add("hidden")
+}
+
+function loadSpeech() {
+
+
+ wordsDiv.innerHTML = speechCollection.map((el, index) => {
+  return `
+  <div id="${index}">
+<div class="speech-header">
+<h5>${el.date}</h5>
+<button class="delete-btn" id=${index}>delete</button>
+</div>
+<p>${el.speech}</p>
+  </div>
+`
+ }).join("")
+
+ const btns = document.querySelectorAll(".delete-btn");
+ btns.forEach((btn,index) =>{
+  btn.addEventListener('click', ()=>{
+    console.log(index)
+    speechCollection.splice(index, 1)
+    loadSpeech()
+    localStorage.setItem('storedData', JSON.stringify(speechCollection))
+
+
+  })
+ })
+
+}
+
+
+
+const recognition = new SpeechRecognition();
+
+recognition.interimResults = true;
+recognition.lang = 'en-US'
+
+
+
+
+
+recordBtn.addEventListener('click', ()=>{
+  recognition.start()
+ 
+  recordBtn.classList.add("line")
+})
+
+
+
+recognition.addEventListener('end', () => {
+  recordBtn.classList.remove('line')
+  const lastP = pTags[pTags.length - 1]
+
+
+})
+
+
+
+
+
+
+
+
+
+recognition.addEventListener('result', (e)=>{
+
+const speechToText = Array.from(e.results)
+.map(result => result[0])
+.map((result, i) => result.transcript)
+.join('')
+
+let currentDate = new Date().toDateString()
+
+const speechObj = {
+  date: currentDate,
+  speech: speechToText,
+}
+
+
+
+
+if (e.results[0].isFinal){
+
+speechCollection.push(speechObj)
+localStorage.setItem('storedData', JSON.stringify(speechCollection))
+}
+
+wordsDiv.innerHTML = speechCollection.map((el,index, arr) => {
+return  `
+   <div id="div-${index}">
+<div class="speech-header">
+<h5>${el.date}</h5>
+<button class="delete-btn" id="${index}">delete</button>
+</div>
+<p data-index="${index}" id="${index}" class="p-tag">${el.speech}</p>
+  </div>
+  `
+
+}).join("");
+
+const pTags = document.querySelectorAll(".p-tag")
+
+const pLength = pTags.length
+const lastP = pTags[pTags.length - 1]
+
+if (lastP) {
+  
+  lastP.contentEditable = true;
+  lastP.classList.add("final-p")
+  
+  const editBtn = document.createElement("span")
+  editBtn.classList.add("final-span")
+  editBtn.textContent = "✎"
+  editBtn.classList.add('edit-position')
+ setTimeout(()=>{
+  lastP.insertAdjacentElement('beforebegin', editBtn)
+
+ }, 500)
+  
+}
+
+  lastP.addEventListener('input', (e) => {
+    const lastText =  pTags.length-1
+   speechCollection[speechCollection.length-1].speech = lastP.textContent
+
+
+  //  speechCollection[lastP].speech = lastP.innerText
+    localStorage.setItem("storedData", JSON.stringify(speechCollection))
+  })
+
+})
+
+const btns = document.querySelectorAll('.delete-btn')
+btns.forEach((btn,index) => {
+  btn.addEventListener('click', ()=>{
+    const elIndex = btn.id;
+    speechCollection.splice(index, 1)
+    loadSpeech()
+    localStorage.setItem('storedData', JSON.stringify(speechCollection))
+
+  })
+})
+
+
+
+
+
+window.addEventListener('load', loadSpeech)
+
+deleteAllBtn.addEventListener('click', () => {
+  wordsDiv.innerHTML = "";
+  localStorage.clear();
+  speechCollection = []
+
+  
+})
+
+</script>
+
+
+  <style>
+    html {
+      font-size: 10px;
+    }
+
+    body {
+      background: #E3E0CD;
+      font-family: 'helvetica neue';
+      font-weight: 200;
+      font-size: 20px;
+    }
+
+
+    .speech-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      margin-bottom: 10px;
+      border-bottom: 1px solid #144E48;
+    }
+
+    .speech-header h5{
+      margin-bottom: 0px;
+    }
+
+
+    .speech-header button {
+      background-color: transparent;
+      color: red;
+      border: none;
+    }
+
+    #speech-body {
+      display: flex;
+    }
+
+    #controls {
+      display: flex;
+      justify-content: space-evenly;
+      align-items: center;
+    }
+
+    #controls button {
+      background-color: #144E48;
+      border-radius: 100%;
+      width: 70px;
+      height: 70px;
+      border: 0px solid;
+      margin: 20px 0px;
+    }
+
+
+    #controls button:hover {
+      background-color: #E4C784;
+      color: #E4C784;
+      border-radius: 100%;
+      width: 70px;
+      height: 70px;
+      border: 0px solid;
+      margin: 20px 0px;
+    }
+
+    #controls button:hover svg path {
+      fill: #144E48;
+    }
+
+    .words {
+      max-width: 500px;
+      margin: 50px auto;
+      background: white;
+      border-radius: 5px;
+      box-shadow: 10px 10px 0 rgba(0,0,0,0.1);
+      padding: 1rem 2rem 1rem 5rem;
+      background: -webkit-gradient(linear, 0 0, 0 100%, from(#d9eaf3), color-stop(4%, #fff)) 0 4px;
+      background-size: 100% 3rem;
+      position: relative;
+      line-height: 3rem;
+      min-width: 50%;
+      margin-top: 20px;
+    }
+
+    p {
+      margin: 0 0 3rem;
+    }
+
+    .words:before {
+      content: '';
+      position: absolute;
+      width: 4px;
+      top: 0;
+      left: 30px;
+      bottom: 0;
+      border: 1px solid;
+      border-color: transparent #efe4e4;
+    }
+
+    /* .edit-position {
+      position: ;
+     
+    } */
+
+    .final-p {
+      display: inline-block;
+  
+    }
+
+    .final-span {
+      position: absolute;
+      left: 10px;
+    }
+
+    .line {
+  animation: pulse 0.5s linear infinite alternate;
+}
+
+.hidden {
+  display: none;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  from { transform: none; }
+  to { transform: scale(1.2,1.2);}
+
+}
+
+  </style>
+
+</body>
+</html>
